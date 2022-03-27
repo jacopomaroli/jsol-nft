@@ -6,6 +6,7 @@ import {
   Keypair,
   clusterApiUrl,
   Commitment,
+  // ConnectionConfig as SolanaConnectionConfig,
   Connection,
   RpcResponseAndContext,
   SignatureStatus,
@@ -45,7 +46,11 @@ export const ENDPOINTS: Array<Endpoint> = [
   {
     name: 'mainnet-beta',
     label: 'mainnet-beta',
-    url: 'https://api.metaplex.solana.com/',
+    // url: 'https://api.metaplex.solana.com/',
+    // url: 'http://localhost:8080/',
+    url:
+      process.env.REACT_APP_MAINNET_ENDPOINT ||
+      'https://api.metaplex.solana.com/',
     chainId: ChainId.MainnetBeta,
   },
   {
@@ -70,7 +75,15 @@ interface ConnectionConfig {
   tokens: Map<string, TokenInfo>;
 }
 
+// const config = {
+//   commitment: 'recent',
+//   httpHeaders: {
+//     Authorization: process.env.FIGMENT_TOKEN,
+//   }
+// } as SolanaConnectionConfig
+
 const ConnectionContext = React.createContext<ConnectionConfig>({
+  // connection: new Connection(DEFAULT_ENDPOINT.url, config),
   connection: new Connection(DEFAULT_ENDPOINT.url, 'recent'),
   endpoint: DEFAULT_ENDPOINT,
   tokens: new Map(),

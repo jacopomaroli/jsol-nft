@@ -62,7 +62,7 @@ import { MetadataData } from '@metaplex-foundation/mpl-token-metadata';
 
 const MULTIPLE_ACCOUNT_BATCH_SIZE = 100;
 
-export const USE_SPEED_RUN = false;
+export const USE_SPEED_RUN = true;
 const WHITELISTED_METADATA = ['98vYFjBYS9TguUMWQRPjy2SZuxKuUMcqR4vnQiLjZbte'];
 const WHITELISTED_AUCTION = ['D8wMB5iLZnsV7XQjpwqXaDynUtFuDs7cRXvEGNj1NF1e'];
 const AUCTION_TO_METADATA: Record<string, string[]> = {

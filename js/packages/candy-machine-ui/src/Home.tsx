@@ -23,6 +23,7 @@ import { MintButton } from './MintButton';
 import { GatewayProvider } from '@civic/solana-gateway-react';
 import { Metadata } from '@metaplex-foundation/mpl-token-metadata';
 import { sendTransaction } from './connection';
+import { MintModal } from './MintModal';
 
 const ConnectButton = styled(WalletDialogButton)`
   width: 100%;
@@ -61,6 +62,21 @@ const Home = (props: HomeProps) => {
 
   const rpcUrl = props.rpcHost;
   const wallet = useWallet();
+
+  let modalOpen = () => {};
+  // let modalClose = () => {}
+  let setMetadata = (data: any) => {
+    console.log(data);
+  };
+
+  const registerModalActions = (handleOpen: any, handleClose: any) => {
+    modalOpen = handleOpen;
+    // modalClose = handleClose
+  };
+
+  const registerSetMetadata = (inSetMetadata: any) => {
+    setMetadata = inSetMetadata;
+  };
 
   const anchorWallet = useMemo(() => {
     if (
@@ -212,6 +228,8 @@ const Home = (props: HomeProps) => {
           const res = await fetch(tokenMetadata.data.data.uri);
           const data = await res.json();
           console.log(data);
+          setMetadata(data);
+          modalOpen();
         }
       } catch (e) {
         console.log('There was a problem fetching Candy Machine state');
@@ -336,6 +354,10 @@ const Home = (props: HomeProps) => {
   return (
     <Container style={{ marginTop: 100 }}>
       <Container maxWidth="xs" style={{ position: 'relative' }}>
+        <MintModal
+          registerSetMetadata={registerSetMetadata}
+          registerModalActions={registerModalActions}
+        />
         <Paper
           style={{
             padding: 24,

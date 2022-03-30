@@ -21,6 +21,7 @@ import { AlertState, toDate, formatNumber, getAtaForMint } from './utils';
 import { MintCountdown } from './MintCountdown';
 import { MintButton } from './MintButton';
 import { GatewayProvider } from '@civic/solana-gateway-react';
+import { Metadata } from '@metaplex-foundation/mpl-token-metadata';
 import { sendTransaction } from './connection';
 
 const ConnectButton = styled(WalletDialogButton)`
@@ -171,6 +172,47 @@ const Home = (props: HomeProps) => {
         setIsActive((cndy.state.isActive = active));
         setIsPresale((cndy.state.isPresale = presale));
         setCandyMachine(cndy);
+
+        const transaction = await props.connection.getTransaction(
+          '47Tm3a5mZdFRUKcxaFe6GNKvNyQoRUtyDRNDZUd2AXb8UP72NRw4SZD4BkMoswW9cQSj4bjPXTAtuAkQ7WorTyTY',
+        );
+        console.log(transaction);
+        const postTokenBalances = transaction?.meta?.postTokenBalances;
+        console.log(postTokenBalances);
+        if (postTokenBalances && postTokenBalances.length) {
+          const nftAddrStr = postTokenBalances[0].mint;
+          console.log(nftAddrStr);
+          // const nftAddr = new anchor.web3.PublicKey(
+          //   nftAddrStr,
+          // );
+          // const TOKEN_METADATA_PROGRAM_ID = new anchor.web3.PublicKey(
+          //   'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s',
+          // );
+          // const metadata = await props.connection.getProgramAccounts(TOKEN_METADATA_PROGRAM_ID, {
+          //   filters: [
+          //     {
+          //       memcmp: {
+          //         offset:
+          //           1 + // key
+          //           32, // update auth
+          //         bytes: nftAddrStr,
+          //       },
+          //     },
+          //   ],
+          // })
+          // const metadata = await getMetadata(nftAddr)
+          // console.log(metadata)
+
+          const metadataPDA = await Metadata.getPDA(new PublicKey(nftAddrStr));
+          const tokenMetadata = await Metadata.load(
+            props.connection,
+            metadataPDA,
+          );
+          console.log(tokenMetadata);
+          const res = await fetch(tokenMetadata.data.data.uri);
+          const data = await res.json();
+          console.log(data);
+        }
       } catch (e) {
         console.log('There was a problem fetching Candy Machine state');
         console.log(e);

@@ -46,11 +46,11 @@ export const ENDPOINTS: Array<Endpoint> = [
   {
     name: 'mainnet-beta',
     label: 'mainnet-beta',
-    // url: 'https://api.metaplex.solana.com/',
+    url: 'https://api.metaplex.solana.com/',
     // url: 'http://localhost:8080/',
-    url:
-      process.env.REACT_APP_MAINNET_ENDPOINT ||
-      'https://api.metaplex.solana.com/',
+    // url:
+    //   process.env.REACT_APP_MAINNET_ENDPOINT ||
+    //   'https://b7ff-91-125-11-29.ngrok.io/',
     chainId: ChainId.MainnetBeta,
   },
   {

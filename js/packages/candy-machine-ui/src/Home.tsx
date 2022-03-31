@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import * as anchor from '@project-serum/anchor';
+import retry from 'async-retry';
 
 import styled from 'styled-components';
 import { Container, Snackbar } from '@material-ui/core';
@@ -192,6 +193,8 @@ const Home = (props: HomeProps) => {
         setIsPresale((cndy.state.isPresale = presale));
         setCandyMachine(cndy);
 
+        // console.log(cndy.program.account.collectionPda.programId.toBase58())
+
         const getAllNFTMetadata = async () => {
           // if(!wallet.publicKey === null) return []
           // const pkey = new PublicKey(wallet.publicKey?.toString() || '')
@@ -215,53 +218,106 @@ const Home = (props: HomeProps) => {
         }));
         setMintedNFTsMetadata(allNFTData);
 
-        /* const transaction = await props.connection.getTransaction(
-          '47Tm3a5mZdFRUKcxaFe6GNKvNyQoRUtyDRNDZUd2AXb8UP72NRw4SZD4BkMoswW9cQSj4bjPXTAtuAkQ7WorTyTY',
-        );
-        console.log(transaction);
-        const postTokenBalances = transaction?.meta?.postTokenBalances;
-        console.log(postTokenBalances);
-        if (postTokenBalances && postTokenBalances.length) {
-          const nftAddrStr = postTokenBalances[0].mint;
-          console.log(nftAddrStr);
-          // const nftAddr = new anchor.web3.PublicKey(
-          //   nftAddrStr,
-          // );
-          // const TOKEN_METADATA_PROGRAM_ID = new anchor.web3.PublicKey(
-          //   'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s',
-          // );
-          // const metadata = await props.connection.getProgramAccounts(TOKEN_METADATA_PROGRAM_ID, {
-          //   filters: [
-          //     {
-          //       memcmp: {
-          //         offset:
-          //           1 + // key
-          //           32, // update auth
-          //         bytes: nftAddrStr,
-          //       },
-          //     },
-          //   ],
-          // })
-          // const metadata = await getMetadata(nftAddr)
-          // console.log(metadata)
-
-          const metadataPDA = await Metadata.getPDA(new PublicKey(nftAddrStr));
-          const tokenMetadata = await Metadata.load(
-            props.connection,
-            metadataPDA,
-          );
-          console.log(tokenMetadata);
-          const res = await fetch(tokenMetadata.data.data.uri);
-          const data = await res.json();
-          console.log(data);
-          // modalOpen();
-        } */
+        // const txId = '47Tm3a5mZdFRUKcxaFe6GNKvNyQoRUtyDRNDZUd2AXb8UP72NRw4SZD4BkMoswW9cQSj4bjPXTAtuAkQ7WorTyTY'
+        // await fetchNFTMetadataFromTx(txId)
+        // await updateMintedNFTsMetadataFromTxId(txId)
       } catch (e) {
         console.log('There was a problem fetching Candy Machine state');
         console.log(e);
       }
     }
   }, [anchorWallet, wallet, props.candyMachineId, props.connection]);
+
+  const fetchNFTMetadataFromTx = async (txId: string) => {
+    const getAllNFTMetadata = async () => {
+      // if(!wallet.publicKey === null) return []
+      // const pkey = new PublicKey(wallet.publicKey?.toString() || '')
+      const everyOwnerNFTMetadata = await Metadata.findDataByOwner(
+        props.connection,
+        wallet.publicKey!,
+      );
+      const collectionNFTMetadata = everyOwnerNFTMetadata.filter(
+        metadata =>
+          metadata?.collection?.key &&
+          metadata?.collection?.key === process.env.REACT_APP_COLLECTION_ID,
+      );
+      return collectionNFTMetadata;
+    };
+
+    console.log('fetching NFT metadata for txId: ' + txId);
+    const allNFTMetadata = await getAllNFTMetadata();
+    console.log(allNFTMetadata);
+    const transaction = await retry(
+      async (bail, attempt) => {
+        console.log(`fetch transaction attempt: ${attempt}`);
+        const transaction = await props.connection.getTransaction(txId);
+        if (!transaction) {
+          throw new Error('Cannot fetch transaction');
+        }
+        return transaction;
+      },
+      {
+        retries: 5,
+        factor: 1,
+        minTimeout: 5000,
+        randomize: false,
+      },
+    );
+
+    console.log(transaction);
+    const postTokenBalances = transaction?.meta?.postTokenBalances;
+    console.log(postTokenBalances);
+    if (postTokenBalances && postTokenBalances.length) {
+      const nftAddrStr = postTokenBalances[0].mint;
+      console.log(nftAddrStr);
+      // const nftAddr = new anchor.web3.PublicKey(
+      //   nftAddrStr,
+      // );
+      // const TOKEN_METADATA_PROGRAM_ID = new anchor.web3.PublicKey(
+      //   'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s',
+      // );
+      // const metadata = await props.connection.getProgramAccounts(TOKEN_METADATA_PROGRAM_ID, {
+      //   filters: [
+      //     {
+      //       memcmp: {
+      //         offset:
+      //           1 + // key
+      //           32, // update auth
+      //         bytes: nftAddrStr,
+      //       },
+      //     },
+      //   ],
+      // })
+      // const metadata = await getMetadata(nftAddr)
+      // console.log(metadata)
+
+      const metadataPDA = await Metadata.getPDA(new PublicKey(nftAddrStr));
+      const tokenMetadata = await Metadata.load(props.connection, metadataPDA);
+      // console.log(tokenMetadata);
+      // const res = await fetch(tokenMetadata.data.data.uri);
+      // const data = await res.json();
+      // console.log(data);
+      return tokenMetadata;
+    }
+  };
+
+  const updateMintedNFTsMetadataFromTxId = async (txId: string | undefined) => {
+    if (!txId) return;
+
+    const NFTMetadata = await fetchNFTMetadataFromTx(txId);
+    if (!NFTMetadata) return;
+
+    const newMintedNFTsMetadata = [...mintedNFTsMetadata];
+    newMintedNFTsMetadata.push({
+      blockchain: NFTMetadata!.data,
+      data: {},
+    });
+
+    setMintedNFTsMetadata(newMintedNFTsMetadata);
+
+    console.log('metadata updated');
+    console.log(newMintedNFTsMetadata);
+  };
 
   const onMint = async (
     beforeTransactions: Transaction[] = [],
@@ -302,6 +358,11 @@ const Home = (props: HomeProps) => {
             message: 'Congratulations! Mint succeeded!',
             severity: 'success',
           });
+          try {
+            updateMintedNFTsMetadataFromTxId(mintTxId);
+          } catch (e) {
+            console.log('cannot update minted nft list');
+          }
         } else {
           setAlertState({
             open: true,

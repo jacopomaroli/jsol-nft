@@ -10,6 +10,13 @@ import ListItem from '@material-ui/core/ListItem';
 import ListItemText from '@material-ui/core/ListItemText';
 import IconButton from '@material-ui/core/IconButton';
 import CloseIcon from '@material-ui/icons/Close';
+import MobileStepper from '@material-ui/core/MobileStepper';
+import KeyboardArrowLeft from '@material-ui/icons/KeyboardArrowLeft';
+import KeyboardArrowRight from '@material-ui/icons/KeyboardArrowRight';
+import Button from '@material-ui/core/Button';
+import SwipeableViews from 'react-swipeable-views';
+// import { useEffect, useCallback } from 'react';
+import { NFTData } from './utils';
 // import { CircularProgress } from '@material-ui/core';
 
 export const CTABox = styled(Box)`
@@ -37,19 +44,66 @@ const style = {
 };
 
 export const MintModal = ({
-  registerSetMetadata,
   registerModalActions,
+  mintedNFTsMetadata,
+  setMintedNFTsMetadata,
 }: {
-  registerSetMetadata: any;
   registerModalActions: any;
+  mintedNFTsMetadata: NFTData[];
+  setMintedNFTsMetadata: any;
 }) => {
   const [open, setOpen] = useState(false);
-  const handleOpen = () => setOpen(true);
+  const handleOpen = () => {
+    setOpen(true);
+    loadNFTData(activeStep);
+  };
   const handleClose = () => setOpen(false);
-  const [metadata, setMetadata] = useState({} as any);
+  const [activeStep, setActiveStep] = useState(0);
+  const maxSteps = mintedNFTsMetadata.length;
 
-  registerSetMetadata(setMetadata);
+  const handleNext = () => {
+    setActiveStep(prevActiveStep => prevActiveStep + 1);
+    loadNFTData(activeStep);
+  };
+
+  const handleBack = () => {
+    setActiveStep(prevActiveStep => prevActiveStep - 1);
+    loadNFTData(activeStep);
+  };
+
+  const loadNFTData = async (index: number) => {
+    const newNFTData: NFTData = { ...mintedNFTsMetadata[index] };
+    const res = await fetch(newNFTData.blockchain.data.uri);
+    const data = await res.json();
+    newNFTData.data = data;
+
+    const newMintedNFTsMetadata = [...mintedNFTsMetadata];
+    newMintedNFTsMetadata[index] = newNFTData;
+
+    setMintedNFTsMetadata(newMintedNFTsMetadata);
+  };
+
+  const handleStepChange = (step: number) => {
+    setActiveStep(step);
+  };
+
   registerModalActions(handleOpen, handleClose);
+
+  // const refreshModalState = useCallback(async () => {
+  //   // let dataAll = []
+  //   // for(const mintedNFTMetadata of mintedNFTsMetadata){
+  //   //   const res = await fetch(mintedNFTMetadata.data.uri);
+  //   //   const data = await res.json();
+  //   //   dataAll.push(data)
+  //   // }
+  //   // console.log(dataAll)
+  //   // setNFTData(dataAll)
+  //   await loadNFTData(activeStep)
+  // }, [loadNFTData, activeStep])
+
+  // useEffect(() => {
+  //   refreshModalState()
+  // }, [refreshModalState])
 
   return (
     <Modal
@@ -66,63 +120,119 @@ export const MintModal = ({
               position: 'absolute' as 'absolute',
               top: '10px',
               right: '10px',
+              zIndex: 1,
             }}
           >
             <CloseIcon />
           </IconButton>
         </Box>
-        <Typography
-          id="modal-modal-title"
-          variant="h6"
-          color="textPrimary"
-          style={{
-            fontWeight: 'bold',
-          }}
+        <SwipeableViews
+          // axis={theme.direction === 'rtl' ? 'x-reverse' : 'x'}
+          axis={'x-reverse'}
+          index={activeStep}
+          onChangeIndex={handleStepChange}
+          enableMouseEvents
         >
-          {metadata?.name}
-        </Typography>
-        <Typography
-          id="modal-modal-description"
-          variant="body2"
-          color="textSecondary"
-          style={{
-            marginBottom: '10px',
-          }}
-        >
-          {metadata?.description}
-        </Typography>
-        <Box>
-          <CardMedia
-            data-src={metadata?.image}
-            component="img"
-            alt={metadata?.name}
-            width="250"
-            height="250"
-            image={metadata?.image}
-            title={metadata?.name}
-            style={{ width: 'auto', margin: 'auto', marginBottom: '10px' }}
-          />
-        </Box>
-        <Typography
-          id="modal-modal-attributes-label"
-          variant="body2"
-          color="textSecondary"
-        >
-          Attributes:
-        </Typography>
-        <List disablePadding={true}>
-          {metadata?.attributes?.map((attribute: any) => {
+          {mintedNFTsMetadata.map((mintedNFTMetadata, index) => {
+            const NFTData = mintedNFTMetadata.data;
             return (
-              <ListItem key={attribute.trait_type} style={{ paddingBottom: 0 }}>
-                <ListItemText>
-                  <Typography variant="body2" color="textPrimary">
-                    {attribute.trait_type}: {attribute.value}
-                  </Typography>
-                </ListItemText>
-              </ListItem>
+              <div key={index}>
+                {Math.abs(activeStep - index) <= 2 ? (
+                  // <img className={classes.img} src={step.imgPath} alt={step.label} />
+                  <>
+                    <Typography
+                      id="modal-modal-title"
+                      variant="h6"
+                      color="textPrimary"
+                      style={{
+                        fontWeight: 'bold',
+                      }}
+                    >
+                      {NFTData.name}
+                    </Typography>
+                    <Typography
+                      id="modal-modal-description"
+                      variant="body2"
+                      color="textSecondary"
+                      style={{
+                        marginBottom: '10px',
+                      }}
+                    >
+                      {NFTData.description}
+                    </Typography>
+                    <Box>
+                      <CardMedia
+                        data-src={NFTData.image}
+                        component="img"
+                        alt={NFTData.name}
+                        width="250"
+                        height="250"
+                        image={NFTData.image}
+                        title={NFTData.name}
+                        style={{
+                          width: 'auto',
+                          margin: 'auto',
+                          marginBottom: '10px',
+                        }}
+                      />
+                    </Box>
+                    <Typography
+                      id="modal-modal-attributes-label"
+                      variant="body2"
+                      color="textSecondary"
+                    >
+                      Attributes:
+                    </Typography>
+                    <List disablePadding={true}>
+                      {NFTData.attributes?.map((attribute: any) => {
+                        return (
+                          <ListItem
+                            key={attribute.trait_type}
+                            style={{ paddingBottom: 0 }}
+                          >
+                            <ListItemText>
+                              <Typography variant="body2" color="textPrimary">
+                                {attribute.trait_type}: {attribute.value}
+                              </Typography>
+                            </ListItemText>
+                          </ListItem>
+                        );
+                      })}
+                    </List>
+                  </>
+                ) : null}
+              </div>
             );
           })}
-        </List>
+        </SwipeableViews>
+        <MobileStepper
+          steps={maxSteps}
+          position="static"
+          variant="text"
+          activeStep={activeStep}
+          nextButton={
+            <Button
+              size="small"
+              onClick={handleBack}
+              disabled={activeStep === 0}
+            >
+              Next
+              {/* theme.direction === 'rtl' ? <KeyboardArrowLeft /> : <KeyboardArrowRight /> */}
+              <KeyboardArrowRight />
+            </Button>
+          }
+          backButton={
+            <Button
+              size="small"
+              onClick={handleNext}
+              disabled={activeStep === maxSteps - 1}
+            >
+              {/* theme.direction === 'rtl' ? <KeyboardArrowRight /> : <KeyboardArrowLeft /> */}
+              <KeyboardArrowLeft />
+              Back
+            </Button>
+          }
+        />
       </Paper>
     </Modal>
   );

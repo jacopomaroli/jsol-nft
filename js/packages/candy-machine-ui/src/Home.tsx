@@ -17,9 +17,16 @@ import {
   getCandyMachineState,
   mintOneToken,
 } from './candy-machine';
-import { AlertState, toDate, formatNumber, getAtaForMint } from './utils';
+import {
+  AlertState,
+  toDate,
+  formatNumber,
+  getAtaForMint,
+  NFTData,
+} from './utils';
 import { MintCountdown } from './MintCountdown';
 import { MintButton } from './MintButton';
+import { ShowMintedButton } from './ShowMintedButton';
 import { GatewayProvider } from '@civic/solana-gateway-react';
 import { Metadata } from '@metaplex-foundation/mpl-token-metadata';
 import { sendTransaction } from './connection';
@@ -59,23 +66,17 @@ const Home = (props: HomeProps) => {
   const [isWhitelistUser, setIsWhitelistUser] = useState(false);
   const [isPresale, setIsPresale] = useState(false);
   const [discountPrice, setDiscountPrice] = useState<anchor.BN>();
+  const [mintedNFTsMetadata, setMintedNFTsMetadata] = useState<NFTData[]>([]);
 
   const rpcUrl = props.rpcHost;
   const wallet = useWallet();
 
   let modalOpen = () => {};
   // let modalClose = () => {}
-  let setMetadata = (data: any) => {
-    console.log(data);
-  };
 
   const registerModalActions = (handleOpen: any, handleClose: any) => {
     modalOpen = handleOpen;
     // modalClose = handleClose
-  };
-
-  const registerSetMetadata = (inSetMetadata: any) => {
-    setMetadata = inSetMetadata;
   };
 
   const anchorWallet = useMemo(() => {
@@ -96,9 +97,11 @@ const Home = (props: HomeProps) => {
   }, [wallet]);
 
   const refreshCandyMachineState = useCallback(async () => {
-    if (!anchorWallet) {
+    if (!anchorWallet || wallet.connecting) {
       return;
     }
+
+    console.log(anchorWallet);
 
     if (props.candyMachineId) {
       try {
@@ -189,7 +192,30 @@ const Home = (props: HomeProps) => {
         setIsPresale((cndy.state.isPresale = presale));
         setCandyMachine(cndy);
 
-        const transaction = await props.connection.getTransaction(
+        const getAllNFTMetadata = async () => {
+          // if(!wallet.publicKey === null) return []
+          // const pkey = new PublicKey(wallet.publicKey?.toString() || '')
+          const everyOwnerNFTMetadata = await Metadata.findDataByOwner(
+            props.connection,
+            anchorWallet.publicKey,
+          );
+          const collectionNFTMetadata = everyOwnerNFTMetadata.filter(
+            metadata =>
+              metadata?.collection?.key &&
+              metadata?.collection?.key === process.env.REACT_APP_COLLECTION_ID,
+          );
+          return collectionNFTMetadata;
+        };
+
+        const allNFTMetadata = await getAllNFTMetadata();
+        console.log(allNFTMetadata);
+        const allNFTData: NFTData[] = allNFTMetadata.map(NFTMetadata => ({
+          blockchain: NFTMetadata,
+          data: {},
+        }));
+        setMintedNFTsMetadata(allNFTData);
+
+        /* const transaction = await props.connection.getTransaction(
           '47Tm3a5mZdFRUKcxaFe6GNKvNyQoRUtyDRNDZUd2AXb8UP72NRw4SZD4BkMoswW9cQSj4bjPXTAtuAkQ7WorTyTY',
         );
         console.log(transaction);
@@ -228,15 +254,14 @@ const Home = (props: HomeProps) => {
           const res = await fetch(tokenMetadata.data.data.uri);
           const data = await res.json();
           console.log(data);
-          setMetadata(data);
-          modalOpen();
-        }
+          // modalOpen();
+        } */
       } catch (e) {
         console.log('There was a problem fetching Candy Machine state');
         console.log(e);
       }
     }
-  }, [anchorWallet, props.candyMachineId, props.connection]);
+  }, [anchorWallet, wallet, props.candyMachineId, props.connection]);
 
   const onMint = async (
     beforeTransactions: Transaction[] = [],
@@ -346,6 +371,7 @@ const Home = (props: HomeProps) => {
     refreshCandyMachineState();
   }, [
     anchorWallet,
+    wallet,
     props.candyMachineId,
     props.connection,
     refreshCandyMachineState,
@@ -355,8 +381,9 @@ const Home = (props: HomeProps) => {
     <Container style={{ marginTop: 100 }}>
       <Container maxWidth="xs" style={{ position: 'relative' }}>
         <MintModal
-          registerSetMetadata={registerSetMetadata}
           registerModalActions={registerModalActions}
+          mintedNFTsMetadata={mintedNFTsMetadata}
+          setMintedNFTsMetadata={setMintedNFTsMetadata}
         />
         <Paper
           style={{
@@ -559,6 +586,7 @@ const Home = (props: HomeProps) => {
                     isActive={isActive || (isPresale && isWhitelistUser)}
                   />
                 )}
+                <ShowMintedButton clickCallback={() => modalOpen()} />
               </MintContainer>
             </>
           )}

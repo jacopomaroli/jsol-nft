@@ -6,11 +6,17 @@ import {
   SYSVAR_RENT_PUBKEY,
   TransactionInstruction,
 } from '@solana/web3.js';
+import { MetadataData } from '@metaplex-foundation/mpl-token-metadata';
 
 export interface AlertState {
   open: boolean;
   message: string;
   severity: 'success' | 'info' | 'warning' | 'error' | undefined;
+}
+
+export interface NFTData {
+  blockchain: MetadataData;
+  data: any;
 }
 
 export const toDate = (value?: anchor.BN) => {

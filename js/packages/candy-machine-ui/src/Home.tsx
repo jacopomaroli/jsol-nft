@@ -80,6 +80,29 @@ const Home = (props: HomeProps) => {
     // modalClose = handleClose
   };
 
+  // const getMintedNFTsMetadata = () => mintedNFTsMetadata
+
+  const loadNFTData = async (index: number) => {
+    console.log(index);
+    const newMintedNFTsMetadata = [...mintedNFTsMetadata];
+    const newNFTData: NFTData = { ...mintedNFTsMetadata[index] };
+    const res = await fetch(newNFTData.blockchain.data.uri);
+    const data = await res.json();
+    newNFTData.data = data;
+    newNFTData.image.image = new Image();
+    newNFTData.image.image.onload = () => {
+      const newMintedNFTsMetadata2 = [...newMintedNFTsMetadata];
+      newMintedNFTsMetadata2[index].image.isLoaded = true;
+      setMintedNFTsMetadata(newMintedNFTsMetadata2);
+    };
+    newNFTData.image.image.src = data.image;
+    newNFTData.image.isLoaded = false;
+
+    newMintedNFTsMetadata[index] = newNFTData;
+
+    setMintedNFTsMetadata(newMintedNFTsMetadata);
+  };
+
   const anchorWallet = useMemo(() => {
     if (
       !wallet ||
@@ -215,6 +238,7 @@ const Home = (props: HomeProps) => {
         const allNFTData: NFTData[] = allNFTMetadata.map(NFTMetadata => ({
           blockchain: NFTMetadata,
           data: {},
+          image: {},
         }));
         setMintedNFTsMetadata(allNFTData);
 
@@ -311,6 +335,7 @@ const Home = (props: HomeProps) => {
     newMintedNFTsMetadata.push({
       blockchain: NFTMetadata!.data,
       data: {},
+      image: {},
     });
 
     setMintedNFTsMetadata(newMintedNFTsMetadata);
@@ -444,7 +469,7 @@ const Home = (props: HomeProps) => {
         <MintModal
           registerModalActions={registerModalActions}
           mintedNFTsMetadata={mintedNFTsMetadata}
-          setMintedNFTsMetadata={setMintedNFTsMetadata}
+          loadNFTData={loadNFTData}
         />
         <Paper
           style={{

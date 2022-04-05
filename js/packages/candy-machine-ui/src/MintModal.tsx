@@ -14,6 +14,7 @@ import MobileStepper from '@material-ui/core/MobileStepper';
 import KeyboardArrowLeft from '@material-ui/icons/KeyboardArrowLeft';
 import KeyboardArrowRight from '@material-ui/icons/KeyboardArrowRight';
 import Button from '@material-ui/core/Button';
+import Skeleton from '@material-ui/lab/Skeleton';
 import SwipeableViews from 'react-swipeable-views';
 // import { useEffect, useCallback } from 'react';
 import { NFTData } from './utils';
@@ -46,11 +47,11 @@ const style = {
 export const MintModal = ({
   registerModalActions,
   mintedNFTsMetadata,
-  setMintedNFTsMetadata,
+  loadNFTData,
 }: {
   registerModalActions: any;
   mintedNFTsMetadata: NFTData[];
-  setMintedNFTsMetadata: any;
+  loadNFTData: any;
 }) => {
   const [open, setOpen] = useState(false);
   const handleOpen = () => {
@@ -62,25 +63,15 @@ export const MintModal = ({
   const maxSteps = mintedNFTsMetadata.length;
 
   const handleNext = () => {
+    const newStep = activeStep + 1;
     setActiveStep(prevActiveStep => prevActiveStep + 1);
-    loadNFTData(activeStep);
+    loadNFTData(newStep);
   };
 
   const handleBack = () => {
+    const newStep = activeStep - 1;
     setActiveStep(prevActiveStep => prevActiveStep - 1);
-    loadNFTData(activeStep);
-  };
-
-  const loadNFTData = async (index: number) => {
-    const newNFTData: NFTData = { ...mintedNFTsMetadata[index] };
-    const res = await fetch(newNFTData.blockchain.data.uri);
-    const data = await res.json();
-    newNFTData.data = data;
-
-    const newMintedNFTsMetadata = [...mintedNFTsMetadata];
-    newMintedNFTsMetadata[index] = newNFTData;
-
-    setMintedNFTsMetadata(newMintedNFTsMetadata);
+    loadNFTData(newStep);
   };
 
   const handleStepChange = (step: number) => {
@@ -135,46 +126,91 @@ export const MintModal = ({
         >
           {mintedNFTsMetadata.map((mintedNFTMetadata, index) => {
             const NFTData = mintedNFTMetadata.data;
+            const NFTDataLoaded = Object.keys(NFTData).length;
+            const NFTImageLoaded = mintedNFTMetadata.image.isLoaded;
+            // const isImageLoaded = NFTData.image.complete && NFTData.image.naturalHeight !== 0;
             return (
               <div key={index}>
                 {Math.abs(activeStep - index) <= 2 ? (
                   // <img className={classes.img} src={step.imgPath} alt={step.label} />
                   <>
-                    <Typography
-                      id="modal-modal-title"
-                      variant="h6"
-                      color="textPrimary"
-                      style={{
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      {NFTData.name}
-                    </Typography>
-                    <Typography
-                      id="modal-modal-description"
-                      variant="body2"
-                      color="textSecondary"
-                      style={{
-                        marginBottom: '10px',
-                      }}
-                    >
-                      {NFTData.description}
-                    </Typography>
-                    <Box>
-                      <CardMedia
-                        data-src={NFTData.image}
-                        component="img"
-                        alt={NFTData.name}
-                        width="250"
-                        height="250"
-                        image={NFTData.image}
-                        title={NFTData.name}
+                    {NFTDataLoaded ? (
+                      <Typography
+                        id="modal-modal-title"
+                        variant="h6"
+                        color="textPrimary"
                         style={{
-                          width: 'auto',
-                          margin: 'auto',
+                          fontWeight: 'bold',
+                        }}
+                      >
+                        {NFTData.name}
+                      </Typography>
+                    ) : (
+                      <Skeleton variant="text" width={250}>
+                        <Typography
+                          id="modal-modal-title"
+                          variant="h6"
+                          color="textPrimary"
+                          style={{
+                            fontWeight: 'bold',
+                          }}
+                        >
+                          #
+                        </Typography>
+                      </Skeleton>
+                    )}
+                    {NFTDataLoaded ? (
+                      <Typography
+                        id="modal-modal-description"
+                        variant="body2"
+                        color="textSecondary"
+                        style={{
                           marginBottom: '10px',
                         }}
-                      />
+                      >
+                        {NFTData.description}
+                      </Typography>
+                    ) : (
+                      <Skeleton variant="text" width={350}>
+                        <Typography
+                          id="modal-modal-description"
+                          variant="body2"
+                          color="textSecondary"
+                          style={{
+                            marginBottom: '10px',
+                          }}
+                        >
+                          #
+                        </Typography>
+                      </Skeleton>
+                    )}
+                    <Box>
+                      {NFTImageLoaded ? (
+                        <CardMedia
+                          data-src={NFTData.image}
+                          component="img"
+                          alt={NFTData.name}
+                          width="250"
+                          height="250"
+                          image={NFTData.image}
+                          title={NFTData.name}
+                          style={{
+                            width: 'auto',
+                            margin: 'auto',
+                            marginBottom: '10px',
+                          }}
+                        />
+                      ) : (
+                        <Skeleton
+                          variant="rect"
+                          width={250}
+                          height={250}
+                          style={{
+                            margin: 'auto',
+                            marginBottom: '10px',
+                          }}
+                        />
+                      )}
                     </Box>
                     <Typography
                       id="modal-modal-attributes-label"
@@ -183,21 +219,47 @@ export const MintModal = ({
                     >
                       Attributes:
                     </Typography>
-                    <List disablePadding={true}>
-                      {NFTData.attributes?.map((attribute: any) => {
-                        return (
-                          <ListItem
-                            key={attribute.trait_type}
-                            style={{ paddingBottom: 0 }}
-                          >
-                            <ListItemText>
-                              <Typography variant="body2" color="textPrimary">
-                                {attribute.trait_type}: {attribute.value}
-                              </Typography>
-                            </ListItemText>
-                          </ListItem>
-                        );
-                      })}
+                    <List
+                      disablePadding={true}
+                      style={{
+                        marginBottom: '15px',
+                      }}
+                    >
+                      {NFTDataLoaded
+                        ? NFTData.attributes?.map((attribute: any) => {
+                            return (
+                              <ListItem
+                                key={attribute.trait_type}
+                                style={{ paddingBottom: 0 }}
+                              >
+                                <ListItemText>
+                                  <Typography
+                                    variant="body2"
+                                    color="textPrimary"
+                                  >
+                                    {attribute.trait_type}: {attribute.value}
+                                  </Typography>
+                                </ListItemText>
+                              </ListItem>
+                            );
+                          })
+                        : Array.from(Array(5).keys()).map((idx: any) => {
+                            return (
+                              <ListItem key={idx} style={{ paddingBottom: 0 }}>
+                                <ListItemText>
+                                  <Skeleton variant="text" width={200}>
+                                    <Typography
+                                      id="modal-modal-description"
+                                      variant="body2"
+                                      color="textPrimary"
+                                    >
+                                      #
+                                    </Typography>
+                                  </Skeleton>
+                                </ListItemText>
+                              </ListItem>
+                            );
+                          })}
                     </List>
                   </>
                 ) : null}

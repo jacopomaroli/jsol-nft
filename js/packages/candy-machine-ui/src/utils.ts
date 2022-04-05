@@ -17,6 +17,7 @@ export interface AlertState {
 export interface NFTData {
   blockchain: MetadataData;
   data: any;
+  image: any;
 }
 
 export const toDate = (value?: anchor.BN) => {

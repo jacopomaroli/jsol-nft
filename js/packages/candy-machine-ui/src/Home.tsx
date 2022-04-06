@@ -68,6 +68,7 @@ const Home = (props: HomeProps) => {
   const [isPresale, setIsPresale] = useState(false);
   const [discountPrice, setDiscountPrice] = useState<anchor.BN>();
   const [mintedNFTsMetadata, setMintedNFTsMetadata] = useState<NFTData[]>([]);
+  const [NFTsMetadataLoaded, setNFTsMetadataLoaded] = useState(false);
 
   const rpcUrl = props.rpcHost;
   const wallet = useWallet();
@@ -241,6 +242,7 @@ const Home = (props: HomeProps) => {
           image: {},
         }));
         setMintedNFTsMetadata(allNFTData);
+        setNFTsMetadataLoaded(true);
 
         // const txId = '47Tm3a5mZdFRUKcxaFe6GNKvNyQoRUtyDRNDZUd2AXb8UP72NRw4SZD4BkMoswW9cQSj4bjPXTAtuAkQ7WorTyTY'
         // await fetchNFTMetadataFromTx(txId)
@@ -672,7 +674,11 @@ const Home = (props: HomeProps) => {
                     isActive={isActive || (isPresale && isWhitelistUser)}
                   />
                 )}
-                <ShowMintedButton clickCallback={() => modalOpen()} />
+                <ShowMintedButton
+                  NFTsMetadataLoaded={NFTsMetadataLoaded}
+                  mintedNFTsMetadata={mintedNFTsMetadata}
+                  clickCallback={() => modalOpen()}
+                />
               </MintContainer>
             </>
           )}

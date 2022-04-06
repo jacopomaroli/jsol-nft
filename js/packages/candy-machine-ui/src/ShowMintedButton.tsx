@@ -1,5 +1,7 @@
 import styled from 'styled-components';
 import Button from '@material-ui/core/Button';
+import { CircularProgress } from '@material-ui/core';
+import { NFTData } from './utils';
 
 export const CTAButton = styled(Button)`
   width: 100%;
@@ -12,14 +14,31 @@ export const CTAButton = styled(Button)`
   font-weight: bold;
 `; // add your own styles here
 
-export const ShowMintedButton = ({ clickCallback }: { clickCallback: any }) => {
+export const ShowMintedButton = ({
+  NFTsMetadataLoaded,
+  mintedNFTsMetadata,
+  clickCallback,
+}: {
+  NFTsMetadataLoaded: boolean;
+  mintedNFTsMetadata: NFTData[];
+  clickCallback: any;
+}) => {
+  const getShowMintedButtonContent = () => {
+    if (!NFTsMetadataLoaded) {
+      return <CircularProgress />;
+    }
+
+    return 'Show Minted NFTs';
+  };
+
   return (
     <CTAButton
+      disabled={!NFTsMetadataLoaded || !mintedNFTsMetadata.length}
       onClick={() => {
         clickCallback();
       }}
     >
-      Show Minted NFTs
+      {getShowMintedButtonContent()}
     </CTAButton>
   );
 };

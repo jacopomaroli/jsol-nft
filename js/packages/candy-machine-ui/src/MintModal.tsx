@@ -16,9 +16,7 @@ import KeyboardArrowRight from '@material-ui/icons/KeyboardArrowRight';
 import Button from '@material-ui/core/Button';
 import Skeleton from '@material-ui/lab/Skeleton';
 import SwipeableViews from 'react-swipeable-views';
-// import { useEffect, useCallback } from 'react';
 import { NFTData } from './utils';
-// import { CircularProgress } from '@material-ui/core';
 
 export const CTABox = styled(Box)`
   position: 'absolute',
